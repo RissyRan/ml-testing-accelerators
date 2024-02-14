@@ -1,0 +1,44 @@
+"apiVersion": "batch/v1"
+"kind": "CronJob"
+"metadata":
+  "name": "cronjob-cleanup"
+"spec":
+  "jobTemplate":
+    "spec":
+      "backoffLimit": 0
+      "template":
+        "spec":
+          "containers":
+          - "args":
+            - |
+              cat > tests.txt <<EOF
+              cronjob.batch/flax.latest-wmt-wmt17.translate-profile-v3-8-1vm
+              cronjob.batch/jax-compilation-cache-test-func-v2-8-1vm
+              cronjob.batch/pt-2.2-accelerate-smoke-v2-8-1vm
+              cronjob.batch/pt-2.2-mnist-pjrt-conv-v2-8-1vm
+              cronjob.batch/pt-2.2-mnist-pjrt-ddp-conv-v2-8-1vm
+              cronjob.batch/pt-2.2-resnet50-pjrt-conv-v3-8-1vm
+              cronjob.batch/pt-2.2-resnet50-pjrt-ddp-fake-v3-8-1vm
+              cronjob.batch/pt-2.2-resnet50-pjrt-fake-v2-8-1vm
+              cronjob.batch/pt-2.2-resnet50-pjrt-fake-v3-8-1vm
+              cronjob.batch/pt-nightly-accelerate-smoke-v2-8-1vm
+              cronjob.batch/pt-nightly-mnist-pjrt-conv-v2-8-1vm
+              cronjob.batch/pt-nightly-mnist-pjrt-ddp-conv-v2-8-1vm
+              cronjob.batch/pt-nightly-resnet50-pjrt-conv-v3-8-1vm
+              cronjob.batch/pt-nightly-resnet50-pjrt-ddp-fake-v3-8-1vm
+              cronjob.batch/pt-nightly-resnet50-pjrt-fake-v2-8-1vm
+              cronjob.batch/pt-nightly-resnet50-pjrt-fake-v3-8-1vm
+              EOF
+              
+              delete_list=$(kubectl get cronjob --namespace=automated -l benchmarkId -o name | grep -vx -f tests.txt)
+              if [[ "$delete_list" ]]; then
+                kubectl delete $delete_list;
+              fi
+            "command":
+            - "bash"
+            - "-cx"
+            "image": "google/cloud-sdk"
+            "name": "clean"
+          "restartPolicy": "Never"
+          "serviceAccount": "cronjob-cleaner"
+  "schedule": "0 */4 * * *"
